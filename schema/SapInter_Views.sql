@@ -102,7 +102,8 @@ AS
 		SELECT
 			MAX(Status.AutoId) AS StatusId
 		FROM oys.Status
-		INNER JOIN oys.Program ON Program.ProgramGUID=Status.ProgramGUID
+		INNER JOIN oys.Program
+			ON Program.ProgramGUID=Status.ProgramGUID
 		GROUP BY Program.ProgramName
 	)
 	SELECT
