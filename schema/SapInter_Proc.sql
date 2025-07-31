@@ -112,9 +112,8 @@ AS
 SET NOCOUNT ON
 BEGIN
 	-- [0] log procedure call
-	-- [1] set @mark by stripping @job from @part_name
-	-- [2] pull operations from sap.PartOperations
-	-- [3] Queue demand for SimTrans PreExec
+	-- [1] pull operations from sap.PartOperations
+	-- [2] Queue demand for SimTrans PreExec
 
 	-- [0] log procedure call
 	INSERT INTO log.SapDemandCalls (
@@ -161,11 +160,7 @@ BEGIN
 	FROM sap.InterfaceConfig
 	WHERE LogProcedureCalls = 1;
 
-	-- [1] set @mark by stripping @job from @part_name
-	IF @mark IS NULL AND @part_name LIKE @job + '[-_]%'
-		SET @mark = SUBSTRING(@part_name,LEN(@job)+2,LEN(@part_name)-LEN(@job)-1);
-
-	-- [2] pull operations from sap.PartOperations
+	-- [1] pull operations from sap.PartOperations
 	SELECT
 		@codegen = AutoProcessInstruction,
 		@op1 = Operation2,
@@ -174,7 +169,7 @@ BEGIN
 	FROM sap.PartOperations
 	WHERE PartName=@part_name;
 		
-	-- [3] Queue demand for SimTrans PreExec
+	-- [2] Queue demand for SimTrans PreExec
 	INSERT INTO sap.DemandQueue (
 		SapEventId,
 		SapPartName,
@@ -472,7 +467,21 @@ BEGIN
 				State,
 				Dwg,
 				Codegen,
-				Job,
+				CASE
+					-- need to make sure Job(Data1) is in the format {Project}{Structure}
+					--	for DetailBayAutoProcess OYS Plugin and to calculate the Mark later
+					-- Ensure that
+					--	1) Job matches the pattern [A-Z]-\d{7}
+					--	2) Job and PartName share the same project
+					-- logically, it is important that in
+					--	CONCAT(a, REPLICATE(b, x)) and SUBSTRING(JOB, s, y) that
+					--		- s == 1 + length(a)
+					--		- y == length(b) * x
+					WHEN JOB LIKE CONCAT('[A-Z]-', REPLICATE('[0-9]', 7))	-- [A-Z]-\d{7}
+					AND  PartName LIKE CONCAT(SUBSTRING(Job, 3, 7), '[A-Z]%')
+						THEN LEFT(PartName, 8)
+					ELSE Job
+				END AS Job,
 				Shipment,
 				Op1,
 				Op2,
@@ -559,27 +568,17 @@ BEGIN
 			State,
 			Dwg,
 			Codegen,	-- autoprocess instruction
-			CASE
-				-- need to make sure Job(Data1) is in the format {Project}{Structure}
-				--	for DetailBayAutoProcess OYS Plugin
-				-- Ensure that
-				--	1) Job matches the pattern [A-Z]-\d{7}
-				--	2) Job and PartName share the same project
-				-- logically, it is important that in
-				--	CONCAT(a, REPLICATE(b, x)) and SUBSTRING(JOB, s, y) that
-				--		- s == 1 + length(a)
-				--		- y == length(b) * x
-				WHEN JOB LIKE CONCAT('[A-Z]-', REPLICATE('[0-9]', 7))
-				AND  PartName LIKE CONCAT(SUBSTRING(Job, 3, 7), '[A-Z]%')
-					THEN LEFT(PartName, 8)
-				ELSE Job
-			END,
+			Job,
 			Shipment,
 			RawMaterialMaster,
 			Op1,	-- secondary operation 1
 			Op2,	-- secondary operation 2
 			Op3,	-- secondary operation 3
-			Mark,	-- part name (Material Master with job removed)
+			CASE
+				WHEN NULLIF(Mark, '') IS NULL	-- piece mark
+					THEN REPLACE(PartName, CONCAT(Job,'_'), '')
+				ELSE Mark
+			END,
 			HeatSwapKeyword,
 			SapPartName,
 			SapEventId
@@ -818,8 +817,8 @@ BEGIN
 			Qty,
 			Matl,
 			Thk,
-			Width,
-			Length,
+			ISNULL(Width, 1),
+			ISNULL(Length, 1),
 			MaterialMaster,
 			SapEventId,
 
