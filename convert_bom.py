@@ -177,7 +177,9 @@ class ReadyFile(object):
     def fix_raw_mm(self, mm):
         match = PROJ_MM.match(mm)
         if match:
-            return "{}-9{}{}".format(*match.groups())
+            job, prefix, item, suffix = match.groups()
+            prefix = 9 - int(prefix)
+            return "{}-{}{}{}".format(job, prefix, item, suffix)
 
         match = STOCK_MM.match(mm)
         if match:
