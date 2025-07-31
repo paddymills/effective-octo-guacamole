@@ -15,19 +15,21 @@ import os
 import re
 from types import SimpleNamespace
 
-CONE_BOM = re.compile(r"ConeBOM_\d{7}[A-Z]\d{2}\.ready")
-CONE_MAT = re.compile(r"ConeMAT_\d{7}[A-Z]\d{2}\.ready")
-MM = re.compile(r"\d{7}[A-Z]-MM\.ready")
+CONE_BOM = re.compile(r"ConeBOM_\d{7}[A-Z]\d{2}(?:[-_]\w+)?\.ready")
+CONE_MAT = re.compile(r"ConeMAT_\d{7}[A-Z]\d{2}(?:[-_]\w+)?\.ready")
+MM = re.compile(r"\d{7}[A-Z]-MM(?:[-_]\w+)?\.ready")
 STOCK_MM = re.compile(r"((?:9-)?)((?:HPS)?(?:5|7|10)0(?:\/50)?W?(?:[TF][123])?)-(\d{2})(\d{2})([\w-]*)")
-PROJ_MM = re.compile(r"(\d{7}[A-Z]\d{0,2})-[0-8](\d{4})(\w*)")
+PROJ_MM = re.compile(r"(\d{7}[A-Z]\d{0,2})-([012])(\d{4})(\w*)")
 GRADE = re.compile(r"([AM]\d{3})-(3\d{2}|TYPE\s?4|(?:HPS)?[5710]{1,2}0W?)((?:[TF][123])?)")
 DESC_PATTERN = re.compile(r"PL ([\d\/\s]+) x ([\d\/\s]+) x ([\d'-]+)\s?((?:A709|M270)-)?((?:HPS)?[1057]0W?(?:[TF][123])?)?")
 
+CONVERTED_MM = re.compile(r"\d{7}[A-Z]\d{0,2}-[789]\d{4}\w*")
 WEB_MM = re.compile(r"\d{7}[A-Z]\d{0,2}-[09]3\d{3}\w*")
 FLG_MM = re.compile(r"\d{7}[A-Z]\d{0,2}-[09]4\d{3}\w*")
-WEB_PART = re.compile(r"\d{7}[A-Z]\d{0,2}-\w+\d+\w*-[NF]?W\d+")
-FLG_PART = re.compile(r"\d{7}[A-Z]\d{0,2}-\w+\d+\w*-[TB]\d+")
+WEB_PART = re.compile(r"\d{5,7}[A-Z]\d{0,2}-?[A-Z]{1,3}\d+[A-Z]*-?[NF]?W\d+")
+FLG_PART = re.compile(r"\d{5,7}[A-Z]\d{0,2}-?[A-Z]{1,3}\d+[A-Z]*-?[TB]\d+")
 ANY_PART = re.compile(r"(\d{7}[A-Z])\d{0,2}-([\w-]+)")
+TRUNCATE_PART = re.compile(r"1(\d{2})0(\d{3}[A-Z]\d{0,2})-(\w+)-?(\w*)")
 
 FOLDER = "conversion"
 CONVERT_DESC = False
