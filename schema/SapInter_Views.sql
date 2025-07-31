@@ -84,6 +84,7 @@ AS
 GO
 CREATE OR ALTER VIEW sap.ProgramStatus
 AS
+	-- get the last(and current) status of a given ProgramName
 	WITH LastStatus AS (
 		SELECT
 			MAX(Status.AutoId) AS StatusId
