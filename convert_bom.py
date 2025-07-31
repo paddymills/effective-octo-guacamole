@@ -483,10 +483,19 @@ class ZHMM002Parser(ZFileParser):
         self.h.weight = header.index("Gross Weight")
         self.h.doc = header.index("Document")
 
+        for sap_name, dict_name in (("Height", "thickness"), ("Width", "width"), ("Length", "length")):
+            if sap_name in header:
+                setattr(self.h, dict_name, header.index(sap_name))
+
     def parse_size(self, row):
         if not row.size:
             x = parse_desc(row.desc)
-            return [x["Length"], x["Width"], x["Thickness"]]
+            if x:   # successful parsing
+                return [x["Length"], x["Width"], x["Thickness"]]
+            elif all(hasattr(row, attr) for attr in ["length", "width", "thickness"]):
+                return [row.length, row.width, row.thickness]
+            else:
+                raise ValueError("Invalid size/description")
 
         thk,wid,len = map(lambda x: round(float(x), 3), row.size.upper().split(' X '))
 
