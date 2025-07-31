@@ -47,22 +47,22 @@ BEGIN
 	FROM SNDBaseDev.dbo.TransAct
 	WHERE TransType LIKE 'SN8%';
 
-	SELECT *
-	FROM (SELECT NULL AS Part) AS _, SNDBaseDev.dbo.Part
-	WHERE PartName IN (
-		SELECT ItemName FROM SNDBaseDev.dbo.TransAct
-		UNION
-		SELECT PartName FROM sap.DemandQueue
-		UNION
-		SELECT part_name FROM log.SapDemandCalls WHERE LogDate > @start
-	)
-	OR Data17 in (
-		SELECT ItemData17 FROM SNDBaseDev.dbo.TransAct
-		UNION
-		SELECT SapPartName FROM sap.DemandQueue
-		UNION
-		SELECT sap_part_name FROM log.SapDemandCalls WHERE LogDate > @start
-	)
+	--SELECT *
+	--FROM (SELECT NULL AS Part) AS _, SNDBaseDev.dbo.Part
+	--WHERE PartName IN (
+	--	SELECT ItemName FROM SNDBaseDev.dbo.TransAct
+	--	UNION
+	--	SELECT PartName FROM sap.DemandQueue
+	--	UNION
+	--	SELECT part_name FROM log.SapDemandCalls WHERE LogDate > @start
+	--)
+	--OR Data17 in (
+	--	SELECT ItemData17 FROM SNDBaseDev.dbo.TransAct
+	--	UNION
+	--	SELECT SapPartName FROM sap.DemandQueue
+	--	UNION
+	--	SELECT sap_part_name FROM log.SapDemandCalls WHERE LogDate > @start
+	--)
 
 	SELECT * FROM (SELECT NULL AS RenamedAlloc) AS _, sap.RenamedDemandAllocation;
 
