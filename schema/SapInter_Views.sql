@@ -94,15 +94,18 @@ AS
 		GROUP BY Program.ProgramName
 	)
 	SELECT
-		StatusId,
+		ProgramId.ArchivePacketId
+		LastStatus.StatusId,
 		Status.ProgramGUID,
-		SigmanestStatus,
-		ProgramName
+		Status.SigmanestStatus,
+		Status.SAPStatus,
+		ProgramId.ProgramName,
+		ProgramId.RepeatId
 	FROM LastStatus
 	INNER JOIN oys.Status
 		ON Status.AutoId=LastStatus.StatusId
-	INNER JOIN oys.Program
-		ON Program.ProgramGUID=Status.ProgramGUID;
+	INNER JOIN sap.ProgramId
+		ON ProgramId.ProgramGUID=Status.ProgramGUID;
 GO
 
 CREATE OR ALTER VIEW sap.ChildNestId
