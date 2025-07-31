@@ -565,7 +565,7 @@ class ZHMM002Parser(ZFileParser):
 
         sheet = workbook.sheets.active
         for row in self.rows(sheet):
-            if row.desc.split(' ')[0].upper() not in ('PL', 'MISC', 'SHEET', 'SHT'):
+            if row.desc.split(' ')[0].upper() not in ('PL', 'MISC', 'SHEET', 'SHT', '10GA', '16GA'):
                 continue
 
             if row.matl in self.exported:
