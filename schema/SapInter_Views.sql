@@ -94,7 +94,7 @@ AS
 		GROUP BY Program.ProgramName
 	)
 	SELECT
-		ProgramId.ArchivePacketId
+		ProgramId.ArchivePacketId,
 		LastStatus.StatusId,
 		Status.ProgramGUID,
 		Status.SigmanestStatus,

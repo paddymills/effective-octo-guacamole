@@ -959,7 +959,7 @@ BEGIN
 		'Program' AS DataSet,
 		ProgramId.ArchivePacketId,
 		UPPER(SigmanestStatus) AS Status,
-		ProgramName,
+		ProgramId.ProgramName,
 		ProgramId.RepeatId,
 		CASE
 			WHEN Program.NestType = 'Split'
