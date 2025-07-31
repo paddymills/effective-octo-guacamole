@@ -214,6 +214,13 @@ class ConeBOM(ReadyFile):
         if line[3] not in ["IN2", "FT2"]:
             return None
 
+        if len(line[0]) > 18:
+            match = TRUNCATE_PART.match(line[0])
+            if match:
+                line[0] = "".join(match.groups())
+            else:
+                print("Failed to truncate part name over 18 characters: {}".format(line[0]))
+
         line[1] = self.fix_raw_mm(line[1])
         if line[3] == "IN2":
             line[2] = str(round(float(line[2]) / 144.0, 3))
