@@ -12,10 +12,7 @@ ENV_CONFIG = {
         ("Qas", 4, True),
         ("Dev", 3, True),
     ],
-    # "Prd": [
-    #     ("Prd", 5, False),
-    # ],
-    "91": [
+    "Prd": [
         ("Prd", 5, False),
     ],
 }
