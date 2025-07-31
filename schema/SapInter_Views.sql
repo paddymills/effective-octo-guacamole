@@ -82,21 +82,6 @@ AS
 		ON ChildPlate.ProgramGUID=Program.ProgramGUID
 	WHERE ChildPlate.PlateNumber=1;	-- same ID for all slab layouts
 GO
-CREATE OR ALTER VIEW sap.ChildNestId
-AS
-	SELECT 
-		ProgramId.ProgramGUID,
-		ProgramId.ArchivePacketId,
-		ChildPlate.ChildPlateGUID,
-		ChildPlate.PlateNumber AS SheetIndex,
-		ChildPlate.ChildNestProgramName AS ProgramName,
-		ChildPlate.ChildNestRepeatID AS RepeatId
-	FROM oys.ChildPlate
-	INNER JOIN sap.ProgramId
-		ON ProgramId.ProgramGUID=ChildPlate.ProgramGUID
-		AND ProgramId.RepeatId=ChildPlate.ChildNestRepeatID;
-GO
-
 CREATE OR ALTER VIEW sap.ProgramStatus
 AS
 	WITH LastStatus AS (
@@ -118,6 +103,22 @@ AS
 	INNER JOIN oys.Program
 		ON Program.ProgramGUID=Status.ProgramGUID;
 GO
+
+CREATE OR ALTER VIEW sap.ChildNestId
+AS
+	SELECT 
+		ProgramId.ProgramGUID,
+		ProgramId.ArchivePacketId,
+		ChildPlate.ChildPlateGUID,
+		ChildPlate.PlateNumber AS SheetIndex,
+		ChildPlate.ChildNestProgramName AS ProgramName,
+		ChildPlate.ChildNestRepeatID AS RepeatId
+	FROM oys.ChildPlate
+	INNER JOIN sap.ProgramId
+		ON ProgramId.ProgramGUID=ChildPlate.ProgramGUID
+		AND ProgramId.RepeatId=ChildPlate.ChildNestRepeatID;
+GO
+
 CREATE OR ALTER VIEW sap.CodeDeliveryList
 AS
 	SELECT
