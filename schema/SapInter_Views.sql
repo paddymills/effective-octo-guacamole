@@ -72,6 +72,7 @@ AS
 		Program.ProgramGUID,
 		Program.NestType,
 		ChildPlate.AutoID AS ArchivePacketId,
+		Program.ProgramName,
 		CASE Program.NestType
 			WHEN 'Slab' THEN 1
 			ELSE ChildPlate.ChildNestRepeatID
