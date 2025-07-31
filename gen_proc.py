@@ -25,6 +25,7 @@ DEPLOY_FILES = [
     "SapInter_DebugProc.sql",
     "SapInter_Proc.sql",
     "SapInter_Views.sql",
+    "SapInter_CdsProc.sql",
 ]
 
 INTER_DB = re.compile("SNInterDev")

@@ -204,6 +204,21 @@ CREATE TABLE sap.FeedbackQueue (
 	IsRectangular CHAR
 );
 GO
+CREATE TABLE cds.ShopNestData (
+	Id BIGINT IDENTITY(1,1) PRIMARY KEY,
+	ProgramName VARCHAR(50),
+	DatePrinted DATETIME,
+	PrintedBy VARCHAR(255)
+);
+GO
+CREATE TABLE archive.ShopNestData (
+	Id BIGINT IDENTITY(1,1) PRIMARY KEY,
+	ArcDateTime DATETIME DEFAULT CURRENT_TIMESTAMP, 
+	ProgramName VARCHAR(50),
+	DatePrinted DATETIME,
+	PrintedBy VARCHAR(255)
+);
+GO
 
 -- ********************************************
 -- *    Interface 4: Move Code                *

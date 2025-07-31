@@ -2,16 +2,20 @@
 USE SNInterDev;
 GO
 
-CREATE OR ALTER PROCEDURE cds.GetNests
-	@job VARCHAR(50),
-	@shipment VARCHAR(50)
+CREATE OR ALTER PROCEDURE cds.GetActiveNests
+	@job VARCHAR(50) NULL,
+	@shipment VARCHAR(50) NULL
 AS
 BEGIN
+	-- TODO: rebuild these into a view
+	SET @job = NULLIF(@job, '');
+	SET @shipment = NULLIF(@shipment, '');
+
 	WITH ProgramParts AS (
 		SELECT
 			ProgramName,
 			STRING_AGG(
-				REPLACE(ParentPart.SNPartName, @job+'_', ''), ','
+				REPLACE(ParentPart.SNPartName, ISNULL(@job,'<notfound>')+'_', ''), ', '
 			) WITHIN GROUP (ORDER BY ParentPart.SNPartName) AS Parts
 		FROM sap.ProgramStatus
 		INNER JOIN oys.ParentPart
@@ -19,9 +23,10 @@ BEGIN
 		WHERE ParentPart.ParentPartGUID IN (
 			SELECT ParentPartGUID
 			FROM oys.ChildPart
-			WHERE ChildPart.Job=@job
-			AND ChildPart.Shipment = @shipment
+			WHERE ChildPart.Job LIKE ISNULL(@job,'%')
+			AND ChildPart.Shipment LIKE ISNULL(@shipment,'%')
 		)
+		AND SigmanestStatus IN ('Created', 'Released')
 		GROUP BY ProgramName
 	)
 		SELECT
@@ -31,7 +36,11 @@ BEGIN
 			CASE
 				WHEN Program.NestType = 'Slab'
 					THEN ParentPlate.PlateName
-				ELSE ChildPlate.MaterialMaster
+				ELSE (
+					SELECT TOP 1 MaterialMaster
+					FROM oys.ChildPlate
+					WHERE ChildPlate.ProgramGUID=Program.ProgramGUID
+				)
 			END AS MaterialMaster,
 			ParentPlate.Material AS Grade,
 			ParentPlate.Thickness,
@@ -45,9 +54,62 @@ BEGIN
 		INNER JOIN oys.Program
 			ON Program.ProgramGUID=ProgramStatus.ProgramGUID
 		INNER JOIN oys.ParentPlate
-			ON ParentPlate.ProgramGUID=ProgramStatus.ProgramGUID
-		LEFT JOIN oys.ChildPlate
-			ON ChildPlate.ProgramGUID=ProgramStatus.ProgramGUID;
+			ON ParentPlate.ProgramGUID=ProgramStatus.ProgramGUID;
+END;
+GO
+CREATE OR ALTER PROCEDURE cds.GetCompleteNests
+	@job VARCHAR(50) NULL,
+	@shipment VARCHAR(50) NULL
+AS
+BEGIN
+	-- TODO: rebuild these into a view
+	SET @job = NULLIF(@job, '');
+	SET @shipment = NULLIF(@shipment, '');
+
+	WITH ProgramParts AS (
+		SELECT
+			ProgramName,
+			STRING_AGG(
+				REPLACE(ParentPart.SNPartName, ISNULL(@job,'')+'_', ''), ','
+			) WITHIN GROUP (ORDER BY ParentPart.SNPartName) AS Parts
+		FROM sap.ProgramStatus
+		INNER JOIN oys.ParentPart
+			ON ParentPart.ProgramGUID=ProgramStatus.ProgramGUID
+		WHERE ParentPart.ParentPartGUID IN (
+			SELECT ParentPartGUID
+			FROM oys.ChildPart
+			WHERE ChildPart.Job LIKE ISNULL(@job,'%')
+			AND ChildPart.Shipment LIKE ISNULL(@shipment,'%')
+		)
+		AND SigmanestStatus = 'Updated'
+		GROUP BY ProgramName
+	)
+		SELECT
+			ProgramParts.ProgramName,
+			Program.MachineName,
+			SigmanestStatus AS ProgramStatus,
+			CASE
+				WHEN Program.NestType = 'Slab'
+					THEN ParentPlate.PlateName
+				ELSE (
+					SELECT TOP 1 MaterialMaster
+					FROM oys.ChildPlate
+					WHERE ChildPlate.ProgramGUID=Program.ProgramGUID
+				)
+			END AS MaterialMaster,
+			ParentPlate.Material AS Grade,
+			ParentPlate.Thickness,
+			Parts,
+			DatePrinted
+		FROM ProgramParts
+		LEFT JOIN cds.ShopNestData
+			ON ProgramParts.ProgramName=ShopNestData.ProgramName
+		INNER JOIN sap.ProgramStatus
+			ON ProgramParts.ProgramName=ProgramStatus.ProgramName
+		INNER JOIN oys.Program
+			ON Program.ProgramGUID=ProgramStatus.ProgramGUID
+		INNER JOIN oys.ParentPlate
+			ON ParentPlate.ProgramGUID=ProgramStatus.ProgramGUID;
 END;
 GO
 
@@ -83,13 +145,18 @@ CREATE OR ALTER PROCEDURE cds.UnmarkNestPrinted
 	@nest VARCHAR(50)
 AS
 BEGIN
-	DELETE FROM cds.ShopNestData WHERE ProgramName=@nest;
+	INSERT INTO archive.ShopNestData
+	SELECT * FROM cds.ShopNestData
+	WHERE ProgramName=@nest;
+
+	DELETE FROM cds.ShopNestData
+	WHERE ProgramName=@nest;
 END;
 GO
 CREATE OR ALTER PROCEDURE cds.MarkNestPrinted
 	@nest VARCHAR(50),
 	@when DATETIME,
-	@username VARCHAR(255)
+	@username VARCHAR(255) = NULL
 AS
 BEGIN
 	-- delete existing
