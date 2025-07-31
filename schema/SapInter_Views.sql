@@ -151,7 +151,6 @@ GO
 
 CREATE OR ALTER VIEW sap.ActivePrograms
 AS
-	-- TODO: refactor with sap.ProgramStatus
 	WITH ActiveGUID AS (
 		SELECT ProgramGUID FROM oys.Status
 		EXCEPT
