@@ -124,6 +124,7 @@ class ReadyFile(object):
         for Variant in variants:
             if Variant.matches_filename(self.file_name):
                 Variant(self.file_name).convert()
+                os.remove(os.path.join(FOLDER, 'input', self.file_name))
                 break
         else:
             raise ValueError("No valid variant found for filename `{}`".format(self.file_name))
