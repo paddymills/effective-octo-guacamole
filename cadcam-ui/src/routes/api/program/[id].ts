@@ -26,7 +26,7 @@ export async function DELETE(event: APIEvent): Promise<Response> {
       throw new Error('Invalid archive packet ID');
     }
     
-    await db.execute('sap.DeleteProgram', {'archive_packet_id': id});
+    await db.execute('sap.DeleteProgram', {'archive_packet_id': id, 'sap_event_id': 'delete_program'});
     
     return { success: true };
   }, `Program ${event.params.id} deleted successfully`);
