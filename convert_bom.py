@@ -568,6 +568,10 @@ class ZHMM002Parser(ZFileParser):
             if row.desc.split(' ')[0].upper() not in ('PL', 'MISC', 'SHEET', 'SHT', '10GA', '16GA'):
                 continue
 
+            if CONVERTED_MM.match(row.matl):
+                print(f"skipping already converted mm {row.matl}")
+                continue
+
             if row.matl in self.exported:
                 continue
 
