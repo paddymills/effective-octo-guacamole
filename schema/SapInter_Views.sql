@@ -210,6 +210,19 @@ AS
 		ON  WorkOrderParts.WONumber=Alloc.WorkOrderName
 		AND WorkOrderParts.PartName=Alloc.NewPartName;
 GO
+CREATE OR ALTER VIEW sap.RemainingPartsToNest
+AS
+	WITH RemainingParts AS (
+		SELECT
+			WONumber,
+			PartName,
+			QtyOrdered-QtyCompleted-QtyInProcess AS QtyRemaining
+		FROM SNDBaseDev.dbo.PartWithQtyInProcess
+		WHERE WONumber != '.meta'
+	)
+	SELECT * FROM RemainingParts
+	WHERE QtyRemaining > 0;
+GO
 
 CREATE OR ALTER VIEW cds.JobShipments
 AS
