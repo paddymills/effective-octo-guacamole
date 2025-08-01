@@ -441,7 +441,6 @@ BEGIN
 
 		-- [3] delete items with no work order (Qty=0 items from SAP)
 		DELETE FROM sap.DemandQueue WHERE WorkOrder IS NULL;
-		
 
 		-- [4] TODO: reduce by renamed demand
 		UPDATE sap.DemandQueue
