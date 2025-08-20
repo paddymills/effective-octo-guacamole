@@ -1176,8 +1176,9 @@ BEGIN
 		'Released',
 		@source,
 		ISNULL(@username, CURRENT_USER)
-	FROM sap.ProgramId
-	WHERE ProgramId.ArchivePacketId = @archive_packet_id;
+	FROM sap.ProgramStatus
+	WHERE ProgramStatus.ArchivePacketId = @archive_packet_id
+	AND ProgramStatus.SigmanestStatus = 'Created';
 END;
 GO
 CREATE OR ALTER PROCEDURE sap.UpdateProgram
