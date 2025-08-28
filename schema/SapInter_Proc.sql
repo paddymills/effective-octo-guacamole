@@ -282,9 +282,12 @@ CREATE OR ALTER PROCEDURE sap.PushRenamedDemand
 	@qty INT
 AS
 BEGIN
+	-- the calling program is responsible to call
+	--	the Boomi process to trigger interface 1
+
 	-- [0] log procedure call
 	-- [1] update/create allocation
-	-- [2] trigger interface 1 to push demand (if not already in the queue)
+	-- [2] Pre-emptively populate the work order in Sigmanest
 
 	-- [0] log procedure call
 	INSERT INTO log.SapDemandCalls (
@@ -326,16 +329,70 @@ BEGIN
 		)
 	END;
 
-	-- [2] trigger interface 1 to push demand (if not already in the queue)
-	INSERT INTO sap.FeedbackQueue
-		(DataSet, ArchivePacketId, PartName)
-	SELECT TOP 1
-		'Demand', 0, Data17
-	FROM SNDBaseDev.dbo.Part
-	WHERE Part.PartName = @original_part_name
-	EXCEPT
-	SELECT DataSet, ArchivePacketId, PartName
-		FROM sap.FeedbackQueue;
+	-- [2] Preemptively populate the work order in Sigmanest
+	-- (this will overinflate the total demand in Sigmanest,
+	--	which is fixed by the Boomi call in [3])
+	WITH PartData AS (
+		SELECT
+			REPLACE(RenamedDemandAllocation.WorkOrderName, '-onhold', '') AS WorkOrder,
+			RenamedDemandAllocation.NewPartName,
+			RenamedDemandAllocation.Qty,
+			Part.Material,
+			Part.DrawingNumber,
+			Part.Remark,
+			Part.Data1 AS Job,
+			Part.Data2 AS Shipment,
+			Part.Data3 AS RawMM,
+			Part.Data4 AS Op1,
+			Part.Data5 AS Op2,
+			Part.Data6 AS Op3,
+			Part.Data9 AS Mark,
+			Part.Data17 AS SapPartName
+		FROM sap.RenamedDemandAllocation
+			INNER JOIN SNDBaseDev.dbo.Part
+				ON Part.PartName=RenamedDemandAllocation.OriginalPartName
+				AND Part.WONumber=RenamedDemandAllocation.WorkOrderName
+		WHERE NewPartName=@new_part_name
+		AND WorkOrderName=@work_order
+	)
+	INSERT INTO SNDBaseDev.dbo.TransAct (
+		TransType,  -- `SN81B`
+		District,
+		OrderNo,	-- work order name
+		ItemName,	-- Material Master (part name)
+		Qty,
+		Material,	-- {spec}-{grade}{test}
+		DwgNumber,	-- Drawing name
+		Remark,		-- autoprocess instruction
+		ItemData1,	-- Job(project)
+		ItemData2,	-- Shipment
+		ItemData3,	-- Raw material master (from BOM, if exists)
+		ItemData4,	-- secondary operation 1
+		ItemData5,	-- secondary operation 2
+		ItemData6,	-- secondary operation 3
+		ItemData9,	-- part name (Material Master with job removed)
+		ItemData10,	-- HeatSwap keyword
+		ItemData17	-- SAP Part Name (for when PartName needs changed)
+	)
+	SELECT
+		'SN81B',
+		SimTransDistrict,
+		WorkOrder,
+		NewPartName,
+		Qty,
+		Material,
+		DrawingNumber,
+		Remark,
+		Job,
+		Shipment,
+		RawMM,
+		Op1,
+		Op2,
+		Op3,
+		Mark,
+		HeatSwapKeyword,
+		SapPartName
+	FROM PartData, sap.InterfaceConfig;
 END;
 GO
 CREATE OR ALTER PROCEDURE sap.RemoveRenamedDemand
@@ -344,9 +401,11 @@ CREATE OR ALTER PROCEDURE sap.RemoveRenamedDemand
 	@qty INT
 AS
 BEGIN
+	-- the calling program is responsible to call
+	--	the Boomi process to trigger interface 1
+
 	-- [0] log procedure call
 	-- [1] reduce allocation
-	-- [2] trigger interface 1 to push demand
 
 	-- [0] log procedure call
 	INSERT INTO log.SapDemandCalls (
@@ -361,19 +420,6 @@ BEGIN
 	UPDATE sap.RenamedDemandAllocation
 	SET Qty = Qty - @qty
 	WHERE Id = @id;
-
-	-- [2] trigger interface 1 to push demand (if not already in the queue)
-	INSERT INTO sap.FeedbackQueue
-		(DataSet, ArchivePacketId, PartName)
-	SELECT TOP 1
-		'Demand', 0, Data17
-	FROM SNDBaseDev.dbo.Part
-	INNER JOIN RenamedDemandAllocation AS Alloc
-		ON Part.PartName = Alloc.OriginalPartName
-	WHERE Alloc.Id = @id
-	EXCEPT
-	SELECT DataSet, ArchivePacketId, PartName
-		FROM sap.FeedbackQueue;
 END;
 GO
 CREATE OR ALTER PROCEDURE sap.DemandPreExec
