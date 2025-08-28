@@ -110,6 +110,7 @@ CREATE TABLE oys.ChildPart (
 	QtyProgram INT,
 	Job VARCHAR(50),
 	Shipment VARCHAR(50),
+	QNNumber VARCHAR(50),
 	TrueArea FLOAT,
 	NestedArea FLOAT
 );
