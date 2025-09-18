@@ -155,15 +155,15 @@ END;
 GO
 CREATE OR ALTER PROCEDURE cds.MarkNestPrinted
 	@nest VARCHAR(50),
-	@when DATETIME,
+	@when DATETIME = NULL,
 	@username VARCHAR(255) = NULL
 AS
 BEGIN
 	-- delete existing
 	EXEC cds.UnmarkNestPrinted @nest;
-	
+
 	-- insert new
 	INSERT INTO cds.ShopNestData (ProgramName, DatePrinted, PrintedBy)
-	VALUES (@nest, @when, @username);
+	VALUES (@nest, ISNULL(@when, CURRENT_TIMESTAMP), @username);
 END;
 GO
