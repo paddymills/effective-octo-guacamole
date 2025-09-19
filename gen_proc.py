@@ -16,6 +16,11 @@ ENV_CONFIG = {
         ("Prd", 5, False),
     ],
 }
+CREATE_FILES = [
+    "SapInter_OysSchema.sql",
+    "SapInter_HssSchema.sql",
+    "SapInter_LogsSchema.sql",
+]
 DEPLOY_CONFIG = {
     "Dev": "hiisqlserv6",
     "Qas": "hiisqlserv6",
@@ -91,6 +96,9 @@ def main():
         description="Generate and deploy SQL procedures for different environments."
     )
     parser.add_argument(
+        "--create", action="store_true", help="Create the database schema."
+    )
+    parser.add_argument(
         "--deploy",
         action="store_true",
         help="Deploy the generated SQL files to the database.",
@@ -111,8 +119,15 @@ def main():
             generate(*env, simtrans)
 
 
-
     for env in map(str.capitalize, args.env):
+        if args.create:
+            for fn in CREATE_FILES:
+                sql = path.join("dist", f"{env}_{fn}")
+                try:
+                    deploy(sql, env)
+                except Exception as e:
+                    if args.verbose:
+                        print(e)
         if args.migrate:
             sql = path.join("dist", f"{env}_SapInter_Migrations.sql")
             deploy(sql, env, success=f"✈️ {env} Migrations deployed successfully!")
