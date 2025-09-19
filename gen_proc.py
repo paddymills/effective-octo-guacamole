@@ -73,14 +73,14 @@ def deploy(sqlfile, env, success=None):
         subprocess.run(
             [
                 "sqlcmd",
-                "-S",   # SQL Server instance
+                "-S",  # SQL Server instance
                 DEPLOY_CONFIG[env],
-                "-E",   # Use Windows Authentication
-                "-b",   # return errorlevel 1 on error
-                "-i",   # Input file
+                "-E",  # Use Windows Authentication
+                "-b",  # return errorlevel 1 on error
+                "-i",  # Input file
                 sqlfile,
-                "-o",   # Output file
-                sqlfile.replace('dist', 'log').replace('.sql', '.log'),
+                "-o",  # Output file
+                sqlfile.replace("dist", "log").replace(".sql", ".log"),
             ],
             check=True,
         )
