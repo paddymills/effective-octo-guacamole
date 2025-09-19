@@ -4,6 +4,12 @@ GO
 CREATE SCHEMA sap;
 GO
 
+CREATE SCHEMA archive;
+GO
+
+CREATE SCHEMA cds;
+GO
+
 DECLARE @district INT = 1;
 DECLARE @do_logging BIT = 0;
 DECLARE @env_name VARCHAR(8) = 'Qas';
