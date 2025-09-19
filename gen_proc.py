@@ -87,6 +87,7 @@ def deploy(sqlfile, env, success=None):
         print(success or f"🚀 {sqlfile} 🎯 {env}")
     except Exception as e:
         print(f"💥 {sqlfile} 💫 {env}")
+        raise e
 
 
 def main():
@@ -112,12 +113,14 @@ def main():
         default=list(default_deploy),
         help="Specify the environments to deploy/migrate.",
     )
+    parser.add_argument(
+        "-v", "--verbose", action="count", help="Increase output verbosity."
+    )
     args = parser.parse_args()
 
     for simtrans, envs in ENV_CONFIG.items():
         for env in envs:
             generate(*env, simtrans)
-
 
     for env in map(str.capitalize, args.env):
         if args.create:
@@ -134,7 +137,11 @@ def main():
         if args.deploy:
             for fn in DEPLOY_FILES:
                 sql = path.join("dist", f"{env}_{fn}")
-                deploy(sql, env)
+                try:
+                    deploy(sql, env)
+                except Exception as e:
+                    if args.verbose:
+                        print(e)
 
 
 if __name__ == "__main__":
