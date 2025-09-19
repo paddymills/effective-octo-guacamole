@@ -15,6 +15,10 @@ ENV_CONFIG = {
     "Prd": [
         ("Prd", 5, False),
     ],
+    # local
+    "Sbx": [
+        ("Sbx", 64, True),
+    ],
 }
 CREATE_FILES = [
     "SapInter_OysSchema.sql",
@@ -25,6 +29,7 @@ DEPLOY_CONFIG = {
     "Dev": "hiisqlserv6",
     "Qas": "hiisqlserv6",
     "Prd": "HSSSNData",
+    "Sbx": "W10286\\SIGMANEST",
 }
 DEPLOY_FILES = [
     "SapInter_DebugProc.sql",
@@ -91,7 +96,7 @@ def deploy(sqlfile, env, success=None):
 
 
 def main():
-    default_deploy = map(str.lower, DEPLOY_CONFIG.keys())
+    default_deploy = map(str.lower, DEPLOY_CONFIG.keys() - {"Sbx"})
 
     parser = ArgumentParser(
         description="Generate and deploy SQL procedures for different environments."
