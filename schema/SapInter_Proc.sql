@@ -620,6 +620,7 @@ BEGIN
 			Op2,	-- secondary operation 2
 			Op3,	-- secondary operation 3
 			CASE
+				WHEN Qty=0 THEN NULL
 				WHEN NULLIF(Mark, '') IS NULL	-- piece mark
 					THEN REPLACE(PartName, CONCAT(Job,'_'), '')
 				ELSE Mark
