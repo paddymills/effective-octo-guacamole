@@ -782,7 +782,9 @@ BEGIN
 			SELECT
 				SheetName,
 				Material,
-				Thickness
+				Thickness,
+				Width,
+				Length
 			FROM SNDBaseDev.dbo.Stock
 			WHERE PrimeCode IN (
 				SELECT MaterialMaster FROM sap.InventoryQueue
@@ -802,14 +804,16 @@ BEGIN
 				ON Stock.PrimeCode=InventoryQueue.MaterialMaster
 		)
 		INSERT INTO sap.InventoryQueue(
-			SapEventId, SheetName, Qty, Matl, Thk
+			SapEventId, SheetName, Qty, Matl, Thk, Width, Length
 		)
 		SELECT
 			SapEventId,
 			SheetName,
 			0,
 			Material,	-- required for 'SN91A'
-			Thickness	-- required for 'SN91A'
+			Thickness,	-- required for 'SN91A'
+			Width,
+			Length
 		FROM ForDeletion
 		LEFT JOIN IdMap
 			ON IdMap.IdSheetName=ForDeletion.SheetName;
