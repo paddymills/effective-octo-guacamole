@@ -113,6 +113,9 @@ def main():
         "--migrate", action="store_true", help="Deploy migration files."
     )
     parser.add_argument(
+        "--all", action="store_true", help="Process all environments"
+    )
+    parser.add_argument(
         "env",
         nargs="*",
         default=list(default_deploy),
@@ -126,6 +129,9 @@ def main():
     for simtrans, envs in ENV_CONFIG.items():
         for env in envs:
             generate(*env, simtrans)
+
+    if args.all:
+        args.env = list(DEPLOY_CONFIG.keys())
 
     for env in map(str.capitalize, args.env):
         if args.create:
