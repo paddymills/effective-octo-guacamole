@@ -16,12 +16,12 @@ insert into #temp(id)
 	--where TransID like '[1-4]-%'
 ;
 
-delete from HIISQLSERV5.SNDBase91.dbo.TransAct
+delete from HIISQLSERV5.SNDBasePrd.dbo.TransAct
 where District in (3,4) and ErrorTag=1;
 
 
 -- copy items to move
-insert into HIISQLSERV5.SNDBase91.dbo.TransAct (
+insert into HIISQLSERV5.SNDBasePrd.dbo.TransAct (
 	TransType,
 	District,
 	TransID,
@@ -109,9 +109,9 @@ where AutoInc in (select id from #temp);
 
 drop table #temp;
 
-update HIISQLSERV5.SNDBase91.dbo.TransAct set ErrorTag=0;
+update HIISQLSERV5.SNDBasePrd.dbo.TransAct set ErrorTag=0;
 
 -- show results
-select * from HIISQLSERV5.SNDBase91.dbo.TransAct;
+select * from HIISQLSERV5.SNDBasePrd.dbo.TransAct;
 --select * from SNDBaseDev.dbo.TransAct;
 
