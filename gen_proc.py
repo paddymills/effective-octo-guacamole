@@ -1,8 +1,8 @@
+import re
+import subprocess
 from argparse import ArgumentParser
 from glob import glob
-from os import path, mkdir
-import subprocess
-import re
+from os import mkdir, path
 
 ENV_CONFIG = {
     # "SimTrans Env": [("Sigmanest Env", "District", "LogProcedureCalls")],
@@ -16,8 +16,8 @@ ENV_CONFIG = {
         ("Prd", 5, False),
     ],
     # local
-    "Sbx": [
-        ("Sbx", 64, True),
+    "Local": [
+        ("Local", 64, True),
     ],
 }
 CREATE_FILES = [
@@ -29,7 +29,7 @@ DEPLOY_CONFIG = {
     "Dev": "hiisqlserv6",
     "Qas": "hiisqlserv6",
     "Prd": "HSSSNData",
-    "Sbx": "W10286\\SIGMANEST",
+    "Local": "W10286\\SIGMANEST",
 }
 DEPLOY_FILES = [
     "SapInter_DebugProc.sql",
@@ -96,7 +96,7 @@ def deploy(sqlfile, env, success=None):
 
 
 def main():
-    default_deploy = map(str.lower, DEPLOY_CONFIG.keys() - {"Sbx"})
+    default_deploy = map(str.lower, DEPLOY_CONFIG.keys() - {"Local"})
 
     parser = ArgumentParser(
         description="Generate and deploy SQL procedures for different environments."
@@ -112,9 +112,7 @@ def main():
     parser.add_argument(
         "--migrate", action="store_true", help="Deploy migration files."
     )
-    parser.add_argument(
-        "--all", action="store_true", help="Process all environments"
-    )
+    parser.add_argument("--all", action="store_true", help="Process all environments")
     parser.add_argument(
         "env",
         nargs="*",
