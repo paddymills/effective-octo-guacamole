@@ -13,6 +13,10 @@ GO
 CREATE SCHEMA cds;
 GO
 
+-- Inventory schema
+CREATE SCHEMA inv;
+GO
+
 DECLARE @district INT = 1;
 DECLARE @do_logging BIT = 0;
 DECLARE @env_name VARCHAR(8) = 'Qas';
@@ -173,6 +177,16 @@ CREATE TABLE sap.InventoryQueue (
 	Notes2 VARCHAR(50),
 	Notes3 VARCHAR(50),
 	Notes4 VARCHAR(50)
+);
+GO
+
+CREATE TABLE inv.Batches (
+	Batch VARCHAR(10) PRIMARY KEY,
+	SheetType VARCHAR(64),	-- New Sheet, NonStandard Size, Remnant
+	SheetName VARCHAR(50),
+	MaterialMaster VARCHAR(50),
+	Plant VARCHAR(4),
+	SLoc VARCHAR(4)
 );
 GO
 
