@@ -1,12 +1,15 @@
 USE SNInterDev;
 GO
 
+-- SAP/Sigmanest interface schema
 CREATE SCHEMA sap;
 GO
 
+-- Data archiving schema
 CREATE SCHEMA archive;
 GO
 
+-- Code Delivery System schema
 CREATE SCHEMA cds;
 GO
 
