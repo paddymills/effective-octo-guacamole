@@ -1,0 +1,18 @@
+meta {
+  name: 9 Inventory
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{url}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "atomId": "{{atom_id}}",
+    "processId": "{{PID9}}"
+  }
+}
