@@ -22,8 +22,9 @@ ENV_CONFIG = {
 }
 CREATE_FILES = [
     "SapInter_OysSchema.sql",
-    "SapInter_HssSchema.sql",
+    "SapInter_SapSchema.sql",
     "SapInter_LogsSchema.sql",
+    "SapInter_CdsSchema.sql",
 ]
 DEPLOY_CONFIG = {
     "Dev": "hiisqlserv6",
@@ -33,9 +34,12 @@ DEPLOY_CONFIG = {
 }
 DEPLOY_FILES = [
     "SapInter_DebugProc.sql",
-    "SapInter_Proc.sql",
-    "SapInter_Views.sql",
+    "SapInter_SapProc.sql",
+    "SapInter_SapViews.sql",
     "SapInter_CdsProc.sql",
+    "SapInter_InvProc.sql",
+    "SapInter_CdsViews.sql",
+    "SapInter_CdsProc2.sql",
 ]
 
 INTER_DB = re.compile("SNInterDev")

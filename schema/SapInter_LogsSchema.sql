@@ -1,3 +1,4 @@
+
 USE SNInterDev;
 GO
 
@@ -29,6 +30,7 @@ CREATE TABLE log.SapDemandCalls (
 	due_date DATE,
 	alloc_id INT
 );
+
 CREATE TABLE log.SapInventoryCalls (
 	LogId INT IDENTITY(1,1) PRIMARY KEY,
 	LogDate DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -48,6 +50,7 @@ CREATE TABLE log.SapInventoryCalls (
 	notes3 VARCHAR(50),
 	notes4 VARCHAR(50)
 );
+
 CREATE TABLE log.FeedbackCalls (
 	LogId INT IDENTITY(1,1) PRIMARY KEY,
 	LogDate DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -56,6 +59,7 @@ CREATE TABLE log.FeedbackCalls (
 	feedback_id INT,
 	archive_packet_id INT
 );
+
 CREATE TABLE log.UpdateProgramCalls (
 	LogId INT IDENTITY(1,1) PRIMARY KEY,
 	LogDate DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -65,5 +69,39 @@ CREATE TABLE log.UpdateProgramCalls (
 	archive_packet_id INT,
 	source VARCHAR(64),
 	username VARCHAR(64)
+);
+GO
+
+CREATE TABLE log.BatchUpload (
+	LogId INT IDENTITY(1,1) PRIMARY KEY,
+	LogDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+	Description VARCHAR(256),
+	Batch VARCHAR(10),
+	SheetType VARCHAR(64),	-- New Sheet, NonStandard Size, Remnant
+	SheetName VARCHAR(50),
+	MaterialMaster VARCHAR(50),
+	Plant VARCHAR(4),
+	SLoc VARCHAR(4)
+);
+GO
+
+CREATE TABLE log.MaterialPlanner (
+	LogId INT IDENTITY(1,1) PRIMARY KEY,
+	LogDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+	Action VARCHAR(8),	-- ADD, DELETE, MOVE
+
+	-- values
+	ProgramName VARCHAR(50),
+	Priority INT,
+	ScheduledBurnDate DATE,
+	Shift INT,
+	PreBlast BIT DEFAULT 0,
+
+	-- Haul out
+	SheetName VARCHAR(50),
+	Destination VARCHAR(16),
+
+	ScheduledBy VARCHAR(50),
+	Notes VARCHAR(1000)
 );
 GO

@@ -9,14 +9,6 @@ GO
 CREATE SCHEMA archive;
 GO
 
--- Code Delivery System schema
-CREATE SCHEMA cds;
-GO
-
--- Inventory schema
-CREATE SCHEMA inv;
-GO
-
 DECLARE @district INT = 1;
 DECLARE @do_logging BIT = 0;
 DECLARE @env_name VARCHAR(8) = 'Qas';
@@ -225,21 +217,6 @@ CREATE TABLE sap.FeedbackQueue (
 	Width INT,
 	Area FLOAT,
 	IsRectangular CHAR
-);
-GO
-CREATE TABLE cds.ShopNestData (
-	Id BIGINT IDENTITY(1,1) PRIMARY KEY,
-	ProgramName VARCHAR(50),
-	DatePrinted DATETIME,
-	PrintedBy VARCHAR(255)
-);
-GO
-CREATE TABLE archive.ShopNestData (
-	Id BIGINT IDENTITY(1,1) PRIMARY KEY,
-	ArcDateTime DATETIME DEFAULT CURRENT_TIMESTAMP,
-	ProgramName VARCHAR(50),
-	DatePrinted DATETIME,
-	PrintedBy VARCHAR(255)
 );
 GO
 

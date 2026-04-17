@@ -1248,6 +1248,7 @@ BEGIN
 	-- [3] delete slab sheet (if slab)
 	-- [4] Push a new entry into oys.Status with SigmanestStatus = 'Updated'
 	-- [5] add to move queue
+	-- [6] remove from material planner
 
 	-- Expected Condition:
 	-- 	It is expected that the program with the given AutoId exists.
@@ -1377,6 +1378,17 @@ BEGIN
 		ON Program.ProgramGUID=ChildNestId.ProgramGUID
 	WHERE ChildNestId.ArchivePacketId = @archive_packet_id
 
+	-- [6] remove from material planner
+	UPDATE cds.MaterialPlanner
+	SET
+		Priority=0,
+		ScheduledBurnDate=NULL
+	WHERE ProgramName IN (
+		SELECT DISTINCT
+			ProgramName
+		FROM sap.ProgramId
+		WHERE ArchivePacketId = @archive_packet_id
+	)
 END;
 GO
 CREATE OR ALTER PROCEDURE sap.DeleteProgram

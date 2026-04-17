@@ -100,12 +100,15 @@ AS
 		Status.SigmanestStatus,
 		Status.SAPStatus,
 		ProgramId.ProgramName,
-		ProgramId.RepeatId
+		ProgramId.RepeatId,
+		Program.MachineName
 	FROM LastStatus
 	INNER JOIN oys.Status
 		ON Status.AutoId=LastStatus.StatusId
 	INNER JOIN sap.ProgramId
-		ON ProgramId.ProgramGUID=Status.ProgramGUID;
+		ON ProgramId.ProgramGUID=Status.ProgramGUID
+	INNER JOIN oys.Program
+		ON Program.ProgramGUID=Status.ProgramGUID;
 GO
 
 CREATE OR ALTER VIEW sap.ChildNestId
