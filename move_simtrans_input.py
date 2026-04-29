@@ -1,6 +1,6 @@
 import os
-import pyodbc
 
+import pyodbc
 
 # SQL Server credentials
 SQL_USER = os.environ["SNDB_USER"]
@@ -31,7 +31,7 @@ try:
 
     # Get records from source database
     source_cursor.execute(
-        f"""
+        """
         SELECT
             TransType, District, TransID,
             OrderNo, ItemName, OnHold, Qty, Material, Customer, DwgNumber,
@@ -69,7 +69,7 @@ try:
     print(f"Inserted {dest_cursor.rowcount} records into destination")
 
     # Delete from source database
-    source_cursor.execute(f"DELETE FROM dbo.TransAct WHERE District < 99")
+    source_cursor.execute("DELETE FROM dbo.TransAct WHERE District < 99")
     source_conn.commit()
     print(f"Deleted {source_cursor.rowcount} records from source")
 
