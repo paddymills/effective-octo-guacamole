@@ -458,9 +458,20 @@ BEGIN
 			AND Data17 IN (
 				SELECT SapPartName FROM sap.DemandQueue
 			)
+
 			EXCEPT
+			
+			-- Skip parts to be pushed via demand queue
 			SELECT WorkOrder, PartName
 			FROM sap.DemandQueue
+
+			EXCEPT
+
+			-- Skip parts in renamed demand
+			SELECT
+				WorkOrderName AS WorkOrder,
+				NewPartName AS PartName
+			FROM sap.RenamedDemandAllocation
 		),
 		IdMap AS (
 			SELECT DISTINCT
@@ -488,7 +499,7 @@ BEGIN
 		-- [3] delete items with no work order (Qty=0 items from SAP)
 		DELETE FROM sap.DemandQueue WHERE WorkOrder IS NULL;
 
-		-- [4] TODO: reduce by renamed demand
+		-- [4] reduce by renamed demand
 		UPDATE sap.DemandQueue
 		SET Qty=Qty-ISNULL((
 			SELECT SUM(Qty)
@@ -498,47 +509,45 @@ BEGIN
 		), 0);
 	
 		-- [5] push data into the SimTrans
-		WITH DemandAndAlloc AS (
-			SELECT
-				SapEventId,
-				SapPartName,
+		WITH
+			DemandAndAlloc AS (
+				SELECT
+					SapEventId,
+					SapPartName,
 
-				ISNULL(Alloc.WorkOrderName, DemandQueue.WorkOrder) AS WorkOrder,
-				ISNULL(Alloc.NewPartName, DemandQueue.PartName) AS PartName,
-				ISNULL(Alloc.Qty, DemandQueue.Qty) AS Qty,
-				Matl,
-				OnHold,
+					WorkOrder,
+					PartName,
+					Qty,
+					Matl,
+					OnHold,
 
-				State,
-				Dwg,
-				Codegen,
-				CASE
-					-- need to make sure Job(Data1) is in the format {Project}{Structure}
-					--	for DetailBayAutoProcess OYS Plugin and to calculate the Mark later
-					-- Ensure that
-					--	1) Job matches the pattern [A-Z]-\d{7}
-					--	2) Job and PartName share the same project
-					-- logically, it is important that in
-					--	CONCAT(a, REPLICATE(b, x)) and SUBSTRING(JOB, s, y) that
-					--		- s == 1 + length(a)
-					--		- y == length(b) * x
-					WHEN JOB LIKE CONCAT('[A-Z]-', REPLICATE('[0-9]', 7))	-- [A-Z]-\d{7}
-					AND  PartName LIKE CONCAT(SUBSTRING(Job, 3, 7), '[A-Z]%')
-						THEN LEFT(PartName, 8)
-					ELSE Job
-				END AS Job,
-				Shipment,
-				Op1,
-				Op2,
-				Op3,
-				Mark,
-				RawMaterialMaster,
-				DueDate
-			FROM sap.DemandQueue
-			LEFT JOIN sap.RenamedDemandAllocation AS Alloc
-				ON Alloc.OriginalPartName=DemandQueue.PartName
-				AND Alloc.WorkOrderName=DemandQueue.WorkOrder
-		)
+					State,
+					Dwg,
+					Codegen,
+					CASE
+						-- need to make sure Job(Data1) is in the format {Project}{Structure}
+						--	for DetailBayAutoProcess OYS Plugin and to calculate the Mark later
+						-- Ensure that
+						--	1) Job matches the pattern [A-Z]-\d{7}
+						--	2) Job and PartName share the same project
+						-- logically, it is important that in
+						--	CONCAT(a, REPLICATE(b, x)) and SUBSTRING(JOB, s, y) that
+						--		- s == 1 + length(a)
+						--		- y == length(b) * x
+						WHEN JOB LIKE CONCAT('[A-Z]-', REPLICATE('[0-9]', 7))	-- [A-Z]-\d{7}
+						AND  PartName LIKE CONCAT(SUBSTRING(Job, 3, 7), '[A-Z]%')
+							THEN LEFT(PartName, 8)
+						ELSE Job
+					END AS Job,
+					Shipment,
+					Op1,
+					Op2,
+					Op3,
+					Mark,
+					RawMaterialMaster,
+					DueDate
+				FROM sap.DemandQueue
+			)
 		INSERT INTO SNDBaseDev.dbo.TransAct (
 			TransType,  -- `SN81B`
 			District,
