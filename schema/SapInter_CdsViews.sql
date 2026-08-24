@@ -274,17 +274,6 @@ AS
 	) AS JsonView;
 GO
 
--- TODO: remove
-CREATE OR ALTER VIEW cds.GetSchedules
-AS
-	SELECT (
-		SELECT
-			Id, Priority, ProgramName, ScheduledBurnDate, Shift, PreBlast
-		FROM cds.MaterialPlanner
-		FOR JSON PATH
-	) AS JsonView;
-GO
-
 
 CREATE OR ALTER VIEW inv.StockWeights
 AS
@@ -380,19 +369,21 @@ AS
 		RankedRequirements AS (
 			SELECT
 				mp.ProgramName,
-				mp.SheetIndex,
+				cp.PlateNumber AS SheetIndex,
 				cp.PlateName AS SheetName,
 				mach.SLoc,
 				ROW_NUMBER() OVER (
 					PARTITION BY PlateName, SLoc
-					ORDER BY Priority
+					ORDER BY
+						mp.ScheduledBurnDate,
+						mp.MachineName,
+						mp.SortOrder
 				) AS PartitionId
 			FROM cds.MaterialPlanner mp
 			INNER JOIN sap.ProgramStatus prog
 				ON prog.ProgramName=mp.ProgramName
 			INNER JOIN oys.ChildPlate cp
 				ON  cp.ProgramGUID = prog.ProgramGUID
-				AND cp.PlateNumber = mp.SheetIndex
 			INNER JOIN cds.Machines mach
 				ON mach.MachineName = prog.MachineName
 			WHERE mp.RequestType = 'Haul In'
@@ -420,4 +411,115 @@ AS
 		ON  res.SheetName   = req.SheetName
 		AND res.SLoc        = req.SLoc
 		AND res.PartitionId = req.PartitionId;
+GO
+
+
+CREATE OR ALTER VIEW cds.ExpandedMaterialPlanner
+AS
+	WITH PriorityMap AS (
+		SELECT
+			ProgramName,
+			ROW_NUMBER() OVER(
+				PARTITION BY Plant, Bay
+				ORDER BY mp.ScheduledBurnDate, mp.MachineName, mp.SortOrder
+			) AS Priority
+		FROM cds.MaterialPlanner mp
+		INNER JOIN cds.Machines m
+			ON m.MachineName=mp.MachineName
+		WHERE ScheduledBurnDate IS NOT NULL
+	), 
+	Jobs AS (
+		SELECT
+			ProgramName,
+			STRING_AGG(JobShipment, ',') AS Jobs
+		FROM (
+			SELECT DISTINCT
+				ProgramName,
+				CONCAT(ChildPart.Job, '-', ChildPart.Shipment) AS JobShipment
+			FROM cds.NestChildPlates
+			INNER JOIN oys.ChildPart
+				ON ChildPart.ChildPlateGUID=NestChildPlates.ChildPlateGUID
+			WHERE ISNULL(ChildPart.Job, '') != ''
+		) AS js
+		GROUP BY ProgramName
+	),
+	PlannerState AS (
+	SELECT
+		mp.Id AS PlannerId,
+		mp.ModifiedDateTime,
+		RequestType,
+
+		mp.ProgramName,
+		ISNULL(cn.SheetIndex, -1) AS SheetIndex,
+		m.Plant,
+		m.Bay,
+		mp.MachineName,
+		ScheduledBurnDate,
+		Priority,
+		Stock.materialMaster,
+		CASE
+			WHEN Stock.SheetName != Stock.MaterialMaster
+				THEN (
+					SELECT TOP 1 Batch
+					FROM inv.Batches
+					WHERE Batches.SheetName=Stock.SheetName
+				)
+			ELSE ''
+		END AS Batch,
+		ROUND(Stock.Weight + 100, -2) AS Weight, -- round up to the nearest 100 lbs
+		Stock.Thickness,
+		Stock.Width,
+		Stock.Length,
+		ISNULL(SLocMap.Sloc, '') AS SLoc,
+		jobs.Jobs AS JobShipment,
+		IIF(PreBlast=1, 'Yes', 'No') AS Preblast,
+		Destination,
+		Notes
+	FROM cds.MaterialPlanner mp
+	LEFT JOIN PriorityMap
+		ON PriorityMap.ProgramName=mp.ProgramName
+	LEFT JOIN Jobs
+		ON Jobs.ProgramName=mp.ProgramName
+	LEFT JOIN cds.Machines m
+		ON m.MachineName=mp.MachineName
+	LEFT JOIN cds.NestChildPlates cn
+		ON cn.ProgramName=mp.ProgramName
+	LEFT JOIN inv.SlocMap
+		ON SLocMap.SheetName=cn.SheetName
+	LEFT JOIN inv.StockWeights Stock
+		ON Stock.SheetName=cn.SheetName
+	)
+	SELECT
+		*,
+
+		HASHBYTES(
+			'SHA2_256',
+			CASE
+				-- We are not delimiting values because the chance of that making a difference is unlikely.
+				-- We are only going to use Weight as a sheet dimension to sense a difference.
+				--	While this is technically innacurate, it is good enough for our use.
+				WHEN RequestType = 'Haul In'
+					THEN CONCAT(
+						CONVERT(NVARCHAR(30), ModifiedDateTime),
+						MachineName,
+						ISNULL(CONVERT(NVARCHAR(30), ScheduledBurnDate), '<delete>'),
+						Priority,
+						MaterialMaster,
+						Batch,
+						Weight,
+						Sloc,
+						jobShipment,
+						preBlast,
+						notes
+					)
+				WHEN RequestType = 'Haul Out'
+					THEN CONCAT(
+						Batch,
+						SLoc,
+						Destination
+					)
+				ELSE CONVERT(NVARCHAR(30), ModifiedDateTime)
+			END
+		) AS HashValue
+	FROM PlannerState;
 GO

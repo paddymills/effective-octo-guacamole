@@ -168,7 +168,7 @@ BEGIN
 		@op3 = Operation4
 	FROM sap.PartOperations
 	WHERE PartName=@part_name;
-		
+
 	-- [2] Queue demand for SimTrans PreExec
 	INSERT INTO sap.DemandQueue (
 		SapEventId,
@@ -243,7 +243,7 @@ BEGIN
 		WHEN 'Drill' IN (@op1, @op2, @op3) THEN 'Drill'
 		WHEN 'Punch' IN (@op1, @op2, @op3) THEN 'Punch'
 		ELSE NULL
-	END; 
+	END;
 
 	-- [2] remove existing records to ensure @part_name exists once
 	DELETE FROM sap.PartOperations WHERE PartName = @part_name;
@@ -393,6 +393,8 @@ BEGIN
 		HeatSwapKeyword,
 		SapPartName
 	FROM PartData, sap.InterfaceConfig;
+
+	-- TODO: [3] reduce source demand
 END;
 GO
 CREATE OR ALTER PROCEDURE sap.RemoveRenamedDemand
@@ -415,7 +417,7 @@ BEGIN
 		'RemoveRenamedDemand', @event_id, @id, @qty
 	FROM sap.InterfaceConfig
 	WHERE LogProcedureCalls = 1;
-	
+
 	-- [1] reduce allocation
 	UPDATE sap.RenamedDemandAllocation
 	SET Qty = Qty - @qty
@@ -444,7 +446,7 @@ BEGIN
 	SELECT 'DemandPreExec'
 	FROM sap.InterfaceConfig
 	WHERE LogProcedureCalls = 1;
-	
+
 	-- place all this in a transaction for consistency
 	BEGIN TRANSACTION
 		-- [1] add material grades to Sigmanest
@@ -460,7 +462,7 @@ BEGIN
 			)
 
 			EXCEPT
-			
+
 			-- Skip parts to be pushed via demand queue
 			SELECT WorkOrder, PartName
 			FROM sap.DemandQueue
@@ -507,7 +509,7 @@ BEGIN
 			WHERE OriginalPartName = DemandQueue.PartName
 			AND WorkOrderName = DemandQueue.WorkOrder
 		), 0);
-	
+
 		-- [5] push data into the SimTrans
 		WITH
 			DemandAndAlloc AS (
@@ -1386,18 +1388,6 @@ BEGIN
 	INNER JOIN oys.Program
 		ON Program.ProgramGUID=ChildNestId.ProgramGUID
 	WHERE ChildNestId.ArchivePacketId = @archive_packet_id
-
-	-- [6] remove from material planner
-	UPDATE cds.MaterialPlanner
-	SET
-		Priority=0,
-		ScheduledBurnDate=NULL
-	WHERE ProgramName IN (
-		SELECT DISTINCT
-			ProgramName
-		FROM sap.ProgramId
-		WHERE ArchivePacketId = @archive_packet_id
-	)
 END;
 GO
 CREATE OR ALTER PROCEDURE sap.DeleteProgram

@@ -88,12 +88,15 @@ GO
 CREATE TABLE log.MaterialPlanner (
 	LogId INT IDENTITY(1,1) PRIMARY KEY,
 	LogDate DATETIME DEFAULT CURRENT_TIMESTAMP,
-	Action VARCHAR(8),	-- ADD, DELETE, MOVE
+	Action VARCHAR(64),	-- ADD, DELETE, MOVE
 
 	-- values
 	ProgramName VARCHAR(50),
-	Priority INT,
+	MachineName VARCHAR(50),
+
+	-- haul in
 	ScheduledBurnDate DATE,
+	SortOrder INT,
 	Shift INT,
 	PreBlast BIT DEFAULT 0,
 

@@ -2,65 +2,8 @@
 USE SNInterDev;
 GO
 
-
-CREATE OR ALTER PROCEDURE cds.CleanMaterialPlanner
-AS
-BEGIN
-	-- Remove any haul-in items that are burned
-	--	We will add some buffer (1h) so that items don't drop off the planner
-	--	if CAD/CAM deletes a program before re-posting it
-	--	(otherwise we'll lose priority)
-	WITH LastUpdate AS (
-		SELECT DISTINCT
-			Program.ProgramName,
-			LAST_VALUE(Status.DBEntryDateTime) OVER (
-				PARTITION BY Program.ProgramName
-				ORDER BY Program.ProgramName
-			) AS LastStatusDateTime
-		FROM oys.Status
-		INNER JOIN oys.Program
-			ON Program.ProgramGUID=Status.ProgramGUID
-	),
-	RemovePrograms AS (
-		SELECT
-			ProgramName
-		FROM LastUpdate
-		WHERE ProgramName NOT IN (
-			SELECT ProgramName
-			FROM sap.ActivePrograms
-		)
-		AND DATEDIFF(Hour, LastStatusDateTime, CURRENT_TIMESTAMP) > 1
-	)
-	DELETE FROM cds.MaterialPlanner
-	WHERE ProgramName IN ( SELECT ProgramName FROM RemovePrograms );
-
-	-- move any past haul-in items to today
-	UPDATE cds.MaterialPlanner
-	SET
-		ModifiedDateTime=CURRENT_TIMESTAMP,
-		ScheduledBurnDate=CAST(CURRENT_TIMESTAMP AS DATE)
-	WHERE
-		ScheduledBurnDate IS NOT NULL
-	AND
-		ScheduledBurnDate < CAST(CURRENT_TIMESTAMP AS DATE);
-
-
-	-- remove any Haul Out items that should drop off the list
-	-- (Batch is no longer in a machine storage location)
-	DELETE FROM cds.MaterialPlanner
-	WHERE RequestType = 'Haul Out'
-	AND SheetName NOT IN (
-		SELECT SheetName
-		FROM inv.Batches
-		WHERE SLoc IN (
-			SELECT SLoc
-			FROM cds.Machines
-		)
-	);
-END;
-GO
-
-CREATE OR ALTER PROCEDURE inv.GetMaterialPlannerList
+-- TODO: remove once new version is stabilized
+CREATE OR ALTER PROCEDURE inv.GetMaterialPlannerListOld
 	@afterDateTime DATETIME = NULL
 AS
 BEGIN
@@ -91,7 +34,7 @@ BEGIN
 				planner.ProgramName,
 				prog.MachineName,
 				ISNULL(planner.ScheduledBurnDate, '') AS ScheduledBurnDate,	-- NULL if nest needs removed
-				planner.Priority,
+				'<removed>' AS Priority, -- old: planner.Priority
 				planner.PreBlast,
 				ISNULL(Jobs.Jobs,'') AS JobShipment,
 				ChildPlate.PlateName AS SheetName,
@@ -214,12 +157,12 @@ GO
 
 CREATE OR ALTER PROCEDURE cds.ScheduleNest
 	@program_name VARCHAR(50),
-	@priority INT,
+	@priority INT = NULL,
 	@date DATE,
-	@shift INT,
-	@preblast BIT,
-	@username VARCHAR(50),
-	@notes VARCHAR(1000)
+	@shift INT = 1,
+	@preblast BIT = 0,
+	@username VARCHAR(50) = NULL,
+	@notes VARCHAR(1000) = NULL
 AS
 BEGIN
 	-- find if it is an add or a modification
@@ -231,7 +174,7 @@ BEGIN
 			Action,ProgramName,Priority,ScheduledBurnDate,Shift,PreBlast,ScheduledBy,Notes
 		)
 		VALUES (
-			'MOVE', @program_name, @priority, @date, @shift, @preblast, @username, @notes
+			'MOVE', @program_name, @priority, @date, @shift, @preblast, ISNULL(@username, CURRENT_USER), @notes
 		);
 
 		UPDATE cds.MaterialPlanner
@@ -239,9 +182,9 @@ BEGIN
 			ModifiedDateTime=CURRENT_TIMESTAMP,
 			Priority=@priority,
 			ScheduledBurnDate=@date,
-			Shift=@shift,
+			Shift=ISNULL(@shift, 1),
 			PreBlast=@preblast,
-			Notes=@notes
+			Notes=ISNULL(@notes, '')
 		WHERE ProgramName=@program_name;
 	END
 
@@ -251,7 +194,7 @@ BEGIN
 			Action, ProgramName, Priority, ScheduledBurnDate, Shift, PreBlast, ScheduledBy
 		)
 		VALUES (
-			'ADD', @program_name, @priority, @date, @shift, @preblast, @username
+			'ADD', @program_name, @priority, @date, @shift, @preblast, ISNULL(@username, CURRENT_USER)
 		);
 
 		INSERT INTO cds.MaterialPlanner (
@@ -318,5 +261,38 @@ BEGIN
 
 	DELETE FROM cds.MaterialPlanner
 	WHERE SheetName = @sheet_name;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE cds.SetNotes
+	@program_name VARCHAR(50),
+	@notes VARCHAR(1000),
+	@username VARCHAR(50)
+AS
+BEGIN
+	INSERT INTO log.MaterialPlanner (Action, ProgramName, ScheduledBy, Notes)
+	VALUES ('NOTES', @program_name, @username, @notes);
+
+	UPDATE cds.MaterialPlanner
+	SET
+		Notes = @notes
+	WHERE ProgramName = @program_name;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE cds.SetPreBlast
+	@program_name VARCHAR(50),
+	@preblast BIT,
+	@username VARCHAR(50)
+AS
+BEGIN
+	INSERT INTO log.MaterialPlanner (Action, ProgramName, ScheduledBy, PreBlast)
+	VALUES ('NOTES', @program_name, @username, @preblast);
+
+	UPDATE cds.MaterialPlanner
+	SET
+		PreBlast = @preblast
+	WHERE ProgramName = @program_name;
 END;
 GO

@@ -37,9 +37,10 @@ DEPLOY_FILES = [
     "SapInter_SapProc.sql",
     "SapInter_SapViews.sql",
     "SapInter_CdsProc.sql",
+    # "SapInter_CdsProc2.sql",
+    "SapInter_CdsProc3.sql",
     "SapInter_InvProc.sql",
     "SapInter_CdsViews.sql",
-    "SapInter_CdsProc2.sql",
 ]
 
 INTER_DB = re.compile("SNInterDev")
@@ -146,7 +147,12 @@ def main():
                         print(e)
         if args.migrate:
             sql = path.join("dist", f"{env}_SapInter_Migrations.sql")
-            deploy(sql, env, success=f"✈️ {env} Migrations deployed successfully!")
+            try:
+                deploy(sql, env, success=f"✈️ {env} Migrations deployed successfully!")
+            except Exception as e:
+                if args.verbose:
+                    print(e)
+
         if args.deploy:
             for fn in DEPLOY_FILES:
                 sql = path.join("dist", f"{env}_{fn}")
